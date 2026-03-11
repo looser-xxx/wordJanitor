@@ -1,0 +1,46 @@
+/* Updated Content Script Injected Styles */
+.word-janitor-wrapper {
+    display: inline-flex !important;
+    flex-direction: row !important; /* Forces normal left-to-right order */
+    align-items: center !important;
+    gap: 8px !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 4px 0 !important;
+}
+
+.word-janitor-btn {
+    background: #8b5cf6 !important;
+    color: white !important;
+    border: 1px solid #7c3aed !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    opacity: 0.9 !important;
+    transition: opacity 0.2s, background 0.2s !important;
+    font-family: 'Segoe UI', Roboto, sans-serif !important;
+    white-space: nowrap !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    z-index: 2147483647 !important;
+    outline: none !important;
+}
+
+.word-janitor-btn:hover {
+    opacity: 1 !important;
+    background: #7c3aed !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+/* Ensure the textarea/input stretches nicely */
+.word-janitor-wrapper > textarea,
+.word-janitor-wrapper > input {
+    flex-grow: 1 !important;
+}

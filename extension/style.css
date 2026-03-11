@@ -91,14 +91,27 @@ h1 {
     transform: translateY(1px);
 }
 
-.primary-btn.active-state {
-    background: #22c55e;
-    box-shadow: 0 4px 6px -1px rgba(34, 197, 94, 0.3);
+/* Content Script Injected Styles */
+.word-janitor-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 10000;
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+    font-family: sans-serif;
+    pointer-events: auto;
 }
 
-footer {
-    text-align: center;
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    padding-top: 10px;
+.word-janitor-btn:hover {
+    opacity: 1;
+    background: #7c3aed;
 }

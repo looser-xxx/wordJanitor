@@ -1,43 +1,63 @@
 document.addEventListener('DOMContentLoaded', () => {
     const activateBtn = document.getElementById('activate-btn');
     const statusDot = document.getElementById('status-dot');
+    const statusText = document.querySelector('.status-text');
 
-    console.log("wordJanitor popup loaded.");
+    console.log("wordJanitor popup loaded with background polling.");
 
-    // Handle "Activate" click
+    function setStatus(isOnline) {
+        if (isOnline) {
+            statusDot.classList.remove('status-offline');
+            statusDot.classList.add('status-online');
+            activateBtn.classList.add('active-state');
+            if (statusText) statusText.innerText = "Server: Online (Ollama)";
+        } else {
+            statusDot.classList.remove('status-online');
+            statusDot.classList.add('status-offline');
+            activateBtn.classList.remove('active-state');
+            if (statusText) statusText.innerText = "Server: Offline";
+        }
+    }
+
+    // Function to check the /ready endpoint
+    async function checkServer() {
+        try {
+            const response = await fetch('http://localhost:4769/ready');
+            const text = await response.text();
+            
+            if (text.trim() === 'Yoo') {
+                setStatus(true);
+            } else {
+                console.warn("Server responded but not with 'Yoo':", text);
+                setStatus(false);
+            }
+        } catch (err) {
+            console.log("Server unreachable");
+            setStatus(false);
+        }
+    }
+
+    // Run immediately on load
+    checkServer();
+
+    // Set up polling interval (every 5 seconds)
+    const pollInterval = setInterval(checkServer, 5000);
+
+    // Clean up interval when popup closes (optional but good practice)
+    window.addEventListener('unload', () => {
+        clearInterval(pollInterval);
+    });
+
+    // Handle "Activate" click (Manual check)
     activateBtn.addEventListener('click', () => {
-        console.log("Checking if server is ready via app.py...");
+        console.log("Manual activation check...");
+        checkServer();
         
-        // Show loading state
-        activateBtn.innerText = 'Connecting...';
-        activateBtn.disabled = true;
-
-        fetch('http://localhost:4769/ready')
-            .then(response => response.text())
-            .then(text => {
-                const cleanText = text.trim();
-                console.log("Server responded with:", cleanText);
-                
-                // Show whatever the server returned on the button
-                activateBtn.innerText = cleanText;
-
-                if (cleanText === 'Yoo') {
-                    activateBtn.classList.add('active-state');
-                    statusDot.classList.remove('status-offline');
-                    statusDot.classList.add('status-online');
-                }
-
-                setTimeout(() => {
-                    activateBtn.innerText = 'Activate';
-                    activateBtn.classList.remove('active-state');
-                    activateBtn.disabled = false;
-                }, 3000);
-            })
-            .catch(err => {
-                console.error("Failed to reach server:", err);
-                alert("Could not connect to the wordJanitor server. Please make sure app.py is running.");
-                activateBtn.innerText = 'Activate';
-                activateBtn.disabled = false;
-            });
+        // Provide click feedback
+        const originalText = activateBtn.innerText;
+        activateBtn.innerText = 'Checking...';
+        setTimeout(() => {
+            activateBtn.innerText = originalText;
+        }, 1000);
     });
 });
