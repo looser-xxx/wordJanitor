@@ -2,7 +2,10 @@
 console.log("wordJanitor content script loaded.");
 
 async function cleanText(textarea) {
-    const originalText = textarea.value;
+    // Handle both regular inputs and contenteditable divs
+    const isContentEditable = textarea.contentEditable === 'true';
+    const originalText = isContentEditable ? textarea.innerText : textarea.value;
+    
     if (!originalText || !originalText.trim()) return;
 
     try {
@@ -18,7 +21,11 @@ async function cleanText(textarea) {
             }
 
             if (response && response.success) {
-                textarea.value = response.correctedText;
+                if (isContentEditable) {
+                    textarea.innerText = response.correctedText;
+                } else {
+                    textarea.value = response.correctedText;
+                }
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 textarea.dispatchEvent(new Event('change', { bubbles: true }));
             }
@@ -36,11 +43,22 @@ async function cleanText(textarea) {
 
 function injectButton(el) {
     if (el.dataset.wordJanitorInjected === "true") return;
-    if (el.type === 'password' || el.readOnly || el.disabled) return;
     
-    const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden') return;
+    // Check if it's a valid text input or contenteditable
+    const isContentEditable = el.contentEditable === 'true';
+    const isTextInput = (el.tagName === 'TEXTAREA' || 
+                        (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
+                        el.tagName === 'DIV' && isContentEditable);
+                        
+    if (!isTextInput || el.type === 'password' || el.readOnly || el.disabled) return;
+    
+    // Check if the element has text OR is focused
+    const hasText = (isContentEditable ? el.innerText : el.value).trim().length > 0;
+    const isFocused = document.activeElement === el;
 
+    if (!hasText && !isFocused) return;
+
+    // Once we decide to inject, mark it
     el.dataset.wordJanitorInjected = "true";
 
     const btn = document.createElement("button");
@@ -52,10 +70,9 @@ function injectButton(el) {
     wrapper.className = "word-janitor-wrapper";
 
     if (el.parentNode) {
-        // Replace element with wrapper, then add button and element back
         el.parentNode.insertBefore(wrapper, el);
-        wrapper.appendChild(btn); // Added FIRST for left-side placement
-        wrapper.appendChild(el);  // Added SECOND
+        wrapper.appendChild(btn);
+        wrapper.appendChild(el);
     }
 
     btn.onclick = (e) => {
@@ -66,12 +83,18 @@ function injectButton(el) {
 }
 
 const monitorInputs = () => {
-    const inputs = document.querySelectorAll('textarea, input[type="text"], input:not([type])');
-    inputs.forEach(injectButton);
+    // Broad selector for potential text areas
+    const potentialInputs = document.querySelectorAll('textarea, input, [contenteditable="true"]');
+    potentialInputs.forEach(injectButton);
 };
 
-// Initial run and recurring monitor
+// Faster monitoring to be more responsive
 setTimeout(() => {
     monitorInputs();
-    setInterval(monitorInputs, 3000);
-}, 1000);
+    setInterval(monitorInputs, 1500);
+}, 500);
+
+// Also listen for focus events to inject buttons immediately
+document.addEventListener('focusin', (e) => {
+    injectButton(e.target);
+}, true);
