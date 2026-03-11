@@ -12,6 +12,6 @@
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:11434/*"
+    "http://localhost:4769/*"
   ]
 }

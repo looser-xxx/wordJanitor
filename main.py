@@ -1,3 +1,5 @@
+from os import read
+
 import ollama
 
 
@@ -11,8 +13,22 @@ def getCorrectSpellingAndGrammer(text):
     return prompt + '"' + text + '"'
 
 
-def getIndexOfSpellingMistaks(sen):
-    list = sen.split()
+def getIndexOfSpellingMistakes(sen1, sen2):
+    words1 = sen1.split()
+    words2 = sen2.split()
+    index = 0
+    mistakes = []
+    for word1, word2 in zip(words1, words2):
+        if word1 != word2:
+            mistakes.append(index)
+        index += 1
+
+    return mistakes
+
+
+def ready():
+    prompt = "How you there? if Yes reply with Yoo"
+    return runPrompt(prompt)
 
 
 client = ollama.Client()
@@ -21,9 +37,10 @@ client = ollama.Client()
 model = "llama3.2:3b"
 
 
-def runPrompt(model, prompt):
+def runPrompt(prompt):
+    model = "llama3.2:3b"
     response = client.generate(model=model, prompt=prompt)
-    print(response.response.strip('"'))
+    return response.response.strip('"')
 
 
 txt = "Would you like me to check a different sentence or a longer passage for errors?"
@@ -31,6 +48,7 @@ txt = "Would you like me to check a different sentence or a longer passage for e
 
 prompt = getCorrectSpelling(txt)
 
-runPrompt(model, prompt)
+ready()
+runPrompt(prompt)
 print("d")
-runPrompt(model, getCorrectSpellingAndGrammer(txt))
+runPrompt(getCorrectSpellingAndGrammer(txt))
