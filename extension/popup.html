@@ -1,1 +1,32 @@
-Placeholder for popup.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wordJanitor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>wordJanitor</h1>
+            <div id="status-dot" class="status-offline" title="Backend Status"></div>
+        </header>
+
+        <main>
+            <section class="info">
+                <p class="status-text">Using Ollama (Local)</p>
+            </section>
+
+            <section class="actions">
+                <button id="activate-btn" class="primary-btn">Activate</button>
+            </section>
+        </main>
+
+        <footer>
+            <p>Privacy-focused spelling & grammar</p>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
