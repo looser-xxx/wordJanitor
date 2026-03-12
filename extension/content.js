@@ -2,7 +2,6 @@
 console.log("wordJanitor content script loaded.");
 
 async function cleanText(textarea) {
-    // Handle both regular inputs and contenteditable divs
     const isContentEditable = textarea.contentEditable === 'true';
     const originalText = isContentEditable ? textarea.innerText : textarea.value;
     
@@ -42,59 +41,71 @@ async function cleanText(textarea) {
 }
 
 function injectButton(el) {
-    if (el.dataset.wordJanitorInjected === "true") return;
-    
-    // Check if it's a valid text input or contenteditable
-    const isContentEditable = el.contentEditable === 'true';
-    const isTextInput = (el.tagName === 'TEXTAREA' || 
-                        (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
-                        el.tagName === 'DIV' && isContentEditable);
-                        
-    if (!isTextInput || el.type === 'password' || el.readOnly || el.disabled) return;
-    
-    // Check if the element has text OR is focused
-    const hasText = (isContentEditable ? el.innerText : el.value).trim().length > 0;
-    const isFocused = document.activeElement === el;
+    // Check if the extension is enabled
+    chrome.storage.local.get(['isEnabled'], (result) => {
+        const isEnabled = result.isEnabled !== false; // Default to true
 
-    if (!hasText && !isFocused) return;
+        // Find the wrapper if it already exists
+        const wrapper = el.closest('.word-janitor-wrapper');
+        const btn = wrapper ? wrapper.querySelector('.word-janitor-btn') : null;
 
-    // Once we decide to inject, mark it
-    el.dataset.wordJanitorInjected = "true";
+        if (!isEnabled) {
+            // Hide the button if it's already there
+            if (btn) btn.style.display = "none";
+            return;
+        }
 
-    const btn = document.createElement("button");
-    btn.innerText = "✨ Clean";
-    btn.className = "word-janitor-btn";
-    btn.type = "button";
-    
-    const wrapper = document.createElement("div");
-    wrapper.className = "word-janitor-wrapper";
+        // Extension IS enabled
+        if (el.dataset.wordJanitorInjected === "true") {
+            if (btn) btn.style.display = "flex";
+            return;
+        }
 
-    if (el.parentNode) {
-        el.parentNode.insertBefore(wrapper, el);
-        wrapper.appendChild(btn);
-        wrapper.appendChild(el);
-    }
+        // Filter valid elements
+        const isContentEditable = el.contentEditable === 'true';
+        const isTextInput = (el.tagName === 'TEXTAREA' || 
+                            (el.tagName === 'INPUT' && ['text', 'search', 'email', 'url'].includes(el.type)) ||
+                            el.tagName === 'DIV' && isContentEditable);
+                            
+        if (!isTextInput || el.type === 'password' || el.readOnly || el.disabled) return;
+        
+        const hasText = (isContentEditable ? el.innerText : el.value).trim().length > 0;
+        const isFocused = document.activeElement === el;
 
-    btn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        cleanText(el);
-    };
+        if (!hasText && !isFocused) return;
+
+        // Injecting
+        el.dataset.wordJanitorInjected = "true";
+        const newBtn = document.createElement("button");
+        newBtn.innerText = "✨ Clean";
+        newBtn.className = "word-janitor-btn";
+        newBtn.type = "button";
+        
+        const newWrapper = document.createElement("div");
+        newWrapper.className = "word-janitor-wrapper";
+
+        if (el.parentNode) {
+            el.parentNode.insertBefore(newWrapper, el);
+            newWrapper.appendChild(newBtn);
+            newWrapper.appendChild(el);
+        }
+
+        newBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            cleanText(el);
+        };
+    });
 }
 
 const monitorInputs = () => {
-    // Broad selector for potential text areas
     const potentialInputs = document.querySelectorAll('textarea, input, [contenteditable="true"]');
     potentialInputs.forEach(injectButton);
 };
 
-// Faster monitoring to be more responsive
-setTimeout(() => {
-    monitorInputs();
-    setInterval(monitorInputs, 1500);
-}, 500);
+monitorInputs();
+setInterval(monitorInputs, 1500);
 
-// Also listen for focus events to inject buttons immediately
 document.addEventListener('focusin', (e) => {
     injectButton(e.target);
 }, true);

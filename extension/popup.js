@@ -1,11 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     const activateBtn = document.getElementById('activate-btn');
+    const deactivateBtn = document.getElementById('deactivate-btn');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.querySelector('.status-text');
 
-    console.log("wordJanitor popup loaded with background polling.");
+    console.log("wordJanitor popup loaded.");
 
-    function setStatus(isOnline) {
+    function setStatus(isOnline, isEnabled = true) {
+        if (!isEnabled) {
+            statusDot.classList.remove('status-online');
+            statusDot.classList.add('status-offline');
+            activateBtn.classList.remove('active-state');
+            if (statusText) statusText.innerText = "wordJanitor: Disabled";
+            return;
+        }
+
         if (isOnline) {
             statusDot.classList.remove('status-offline');
             statusDot.classList.add('status-online');
@@ -19,45 +28,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to check the /ready endpoint
     async function checkServer() {
-        try {
-            const response = await fetch('http://localhost:4769/ready');
-            const text = await response.text();
-            
-            if (text.trim() === 'Yoo') {
-                setStatus(true);
-            } else {
-                console.warn("Server responded but not with 'Yoo':", text);
-                setStatus(false);
+        chrome.storage.local.get(['isEnabled'], async (result) => {
+            const isEnabled = result.isEnabled !== false; // Default to true
+            if (!isEnabled) {
+                setStatus(false, false);
+                return;
             }
-        } catch (err) {
-            console.log("Server unreachable");
-            setStatus(false);
-        }
+
+            try {
+                const response = await fetch('http://localhost:4769/ready');
+                const text = await response.text();
+                setStatus(text.trim() === 'Yoo', true);
+            } catch (err) {
+                setStatus(false, true);
+            }
+        });
     }
 
-    // Run immediately on load
     checkServer();
+    setInterval(checkServer, 5000);
 
-    // Set up polling interval (every 5 seconds)
-    const pollInterval = setInterval(checkServer, 5000);
-
-    // Clean up interval when popup closes (optional but good practice)
-    window.addEventListener('unload', () => {
-        clearInterval(pollInterval);
+    activateBtn.addEventListener('click', () => {
+        chrome.storage.local.set({ isEnabled: true }, () => {
+            console.log("Activating wordJanitor...");
+            checkServer();
+        });
     });
 
-    // Handle "Activate" click (Manual check)
-    activateBtn.addEventListener('click', () => {
-        console.log("Manual activation check...");
-        checkServer();
-        
-        // Provide click feedback
-        const originalText = activateBtn.innerText;
-        activateBtn.innerText = 'Checking...';
-        setTimeout(() => {
-            activateBtn.innerText = originalText;
-        }, 1000);
+    deactivateBtn.addEventListener('click', () => {
+        chrome.storage.local.set({ isEnabled: false }, () => {
+            console.log("Deactivating wordJanitor...");
+            setStatus(false, false);
+            // Alert user visually
+            const originalText = deactivateBtn.innerText;
+            deactivateBtn.innerText = 'Disabled';
+            setTimeout(() => deactivateBtn.innerText = originalText, 1000);
+        });
     });
 });
